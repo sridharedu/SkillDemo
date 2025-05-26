@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example.bookstore</groupId>
+        <artifactId>simple-online-bookstore</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>common-libs</artifactId>
+    <packaging>pom</packaging> <!-- Changed from jar to pom -->
+
+    <name>Common Libraries</name>
+    <description>Shared libraries and utilities for the bookstore microservices</description>
+
+    <dependencies>
+        <!-- Dependencies for common libraries will be added here later -->
+        <!-- For now, spring-boot-starter-test can remain or be removed if not immediately needed -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!-- Removed build section -->
+
+</project>
