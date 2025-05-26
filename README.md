@@ -1,3 +1,107 @@
+# Simple Online Bookstore Demo
+
+A lightweight, end‐to‐end microservices reference implementation that illustrates core distributed‐systems patterns, technologies, and best practices—yet remains simple enough for live demos, tutorials, or hands-on learning sessions.
+
+---
+
+## 🚀 Project Purpose
+
+This “Online Bookstore” showcases how to build a microservices architecture around a familiar domain (browsing and ordering books). It demonstrates:
+
+* **Service decomposition** with one database per service
+* **Inter-service communication** via **RPC** (Feign) and **messaging** (RabbitMQ)
+* **Distributed transactions** with the **Saga** pattern
+* **Read-side optimization** with **CQRS** and **Command-side replica**
+* **Service discovery**, **API Gateway**, and **client/server-side discovery**
+* **Resilience** via **Circuit Breakers**
+* **Authentication** with **JWT** tokens
+* **Observability**: logging, metrics, tracing, health checks
+* **Testing**: component tests & contract tests
+* **UI composition**: server-side (Thymeleaf) & client-side (React)
+* **Deployment models**: Docker Compose (single host) & Kubernetes (multi-service per host)
+* **Cross-cutting** concerns via a **microservice chassis** and **externalized configuration**
+
+---
+
+## 📦 Architecture Overview
+
+```
+                    ┌────────────────────┐
+                    │ POSTMAN or ANY other tool to test │
+                    └─────────┬──────────┘
+                              │ HTTP/HTTPS (JWT)
+                              ▼
+                    ┌────────────────────┐
+                    │   API Gateway      │
+                    │(Spring Cloud Gate) │
+                    └─────────┬──────────┘
+         Service ID routing │       └─ client-side service discovery (Ribbon)
+                            ▼
+┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+│ CatalogService │   │ OrderService   │   │ QueryService   │
+│   (RPC read)   │   │ (commands +    │   │ (read model,   │
+│  own DB (H2)   │   │  Saga via MQ)  │   │ event replica) │
+└────────────────┘   └─────┬──────────┘   └───────┬────────┘
+      │ RPC/Feign            │ RabbitMQ events         │
+      ▼                      ▼                        ▼
+┌──────────────┐      ┌──────────────┐        ┌──────────────┐
+│InventorySvc  │      │PaymentSvc    │        │ShippingSvc   │
+│ (reserve RPC)│      │(charge RPC + │        │(ship on      │
+│ own DB)      │      │ circuit-brkr)│        │  events)     │
+└──────────────┘      └───────┬──────┘        └───────┬──────┘
+                         MQ topics                MQ topics
+
+```
+
+* **RPC vs. Messaging**
+
+  * CatalogService & QueryService use **Feign/RPC** for low-latency reads.
+  * OrderSaga (OrderService) leverages **RabbitMQ** events for distributed transactions.
+* **Data ownership**: each service has its **own database** (Spring Boot–managed).
+* **Read-side**: QueryService builds a **replicated read model** via events (command-side replica).
+
+---
+
+## 🔑 Patterns & Components Mapping
+
+| **Category**            | **Pattern/Tech**                             | **Where**                                        |
+| ----------------------- | -------------------------------------------- | ------------------------------------------------ |
+| **Transactions**        | Saga                                         | OrderService orchestrates reserve→pay→ship       |
+| **Transactions**        | Compensating Actions                         | Roll back inventory/payment on failures          |
+| **Queries**             | CQRS / API Composition                       | QueryService “order summary” endpoints           |
+| **Read Model**          | Command-Side Replica                         | QueryService subscribes to all domain events     |
+| **Communication**       | Messaging (RabbitMQ)                         | Events between Order, Inventory, Payment, Ship   |
+| **Communication**       | RPC (Feign + Ribbon)                         | CatalogService & PaymentService calls            |
+| **Gateway & Discovery** | API Gateway                                  | Spring Cloud Gateway                             |
+| **Gateway & Discovery** | Client-side Discovery (Ribbon + Feign)       | In-service load balancing                        |
+| **Gateway & Discovery** | Server-side Discovery (Gateway + Eureka)     | Gateway routes by service ID                     |
+| **Database**            | Database per Service                         | Each microservice has own H2/Postgres DB         |
+| **Resilience**          | Circuit Breaker (Resilience4j)               | Around PaymentService calls in OrderService      |
+| **Security**            | Access Token (JWT)                           | Spring Security on Gateway → JWT validation      |
+| **Observability**       | Log Aggregation (ELK)                        | Centralized logs via Logback→Logstash→Kibana     |
+| **Observability**       | Metrics (Micrometer + Prometheus)            | `/actuator/prometheus` scraped by Prometheus     |
+| **Observability**       | Distributed Tracing (Sleuth + Zipkin)        | Trace IDs across all service calls               |
+| **Observability**       | Audit Logging                                | Structured “who did what” logs in each service   |
+| **Observability**       | Exception Tracking (Sentry)                  | Auto-report uncaught errors                      |
+| **Observability**       | Health Check API (`/actuator/health`)        | Each service exposes health & info               |
+| **Deployment**          | Single Service per Host                      | Docker Compose for local demo                    |
+| **Deployment**          | Multiple Services per Host                   | Kubernetes manifests for shared nodes            |
+| **Cross-cutting**       | Microservice Chassis                         | Shared Spring Boot starter with common concerns  |
+| **Cross-cutting**       | Externalized Configuration (`@RefreshScope`) | Spring Cloud Config Server                       |
+
+---
+
+## 🛠️ Tech Stack
+
+* **Java 17 & Spring Boot 3.x**
+* **Spring Cloud**: Config, Eureka, Gateway, Sleuth, Zipkin, Contract
+* **Spring Data JPA** (H2 or PostgreSQL), **Spring AMQP** (RabbitMQ)
+* **OpenFeign** + **Resilience4j**
+* **Docker & Docker Compose** / **Kubernetes**
+* **ELK Stack**, **Prometheus & Grafana**, **Sentry**
+
+---
+
 Below is a set of **40 Jira‐style tickets** (BOOK-1…BOOK-40) that break the “Simple Online Bookstore” demo into small, teachable tasks—each mapping directly to one of your required patterns or technologies. You can copy these into your Jira board and assign/estimate as needed.
 
 ---
@@ -29,8 +133,8 @@ Below is a set of **40 Jira‐style tickets** (BOOK-1…BOOK-40) that break the 
 | **BOOK-23** | Build read model via Command-Side Replica                           | • Subscribe to all domain events in QueryService<br>• Update Query DB tables for orders, inventory, payments                                      |
 | **BOOK-24** | Expose QueryService REST endpoints for UI                           | • `GET /orders/summary` & `GET /inventory/status` endpoints                                                                                       |
 | **BOOK-25** | Declare RabbitMQ exchanges, queues & bindings via Spring Boot       | • `@Bean` for `Queue`, `DirectExchange`, `Binding` in each service<br>• Verify queue creation on startup                                          |
-| **BOOK-26** | Write Service Component Tests for OrderService                      | • `@WebMvcTest(OrderController.class)` + mocked services<br>• Assert HTTP status & JSON body                                                      |
-| **BOOK-27** | Write Contract Tests for Order ↔ Inventory RPC                      | • Spring Cloud Contract stub for `reserveStock`<br>• Verify OrderService can call stub successfully                                               |
+| **BOOK-26** |          <TBD Buffer ticket>                                        |                                                                                                                                                   |
+| **BOOK-27** |          <TBD Buffer ticket>                                        |                                                                                                                                                   |
 | **BOOK-28** | Integrate Spring Cloud Sleuth + Zipkin                              | • Add dependencies to each service<br>• Verify trace IDs propagate across service calls                                                           |
 | **BOOK-29** | Add Micrometer metrics & Grafana dashboard                          | • Expose JVM + HTTP metrics via `/actuator/prometheus`<br>• Create basic Grafana dashboard                                                        |
 | **BOOK-30** | Configure ELK stack for log aggregation                             | • Logback ship logs to Logstash<br>• Index in Elasticsearch & view in Kibana                                                                      |
